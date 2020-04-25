@@ -16,5 +16,24 @@
 	"newline_after_method": true,
 
 	// places the cursor inside the brackets, so you can directly start typing
-	"place_cursor_between_brackets": true
+	"place_cursor_between_brackets": true,
+
+	// place info in header
+	"place_info_in_header": false,
+
+	"header_scope": "",
+
+	// info author name
+	"info_author_name": "Author Name",
+
+	// use namespace
+	"use_namespace": false,
+
+	// namespace name
+	"namespace_name": "",
+
+	"project_name": "",
+
+	// namespace format to remove in class
+	"namespace_clear_flags": []
 }

@@ -1,4 +1,5 @@
 import sublime, sublime_plugin, os
+from datetime import date
 from sublime_lib import ResourcePath
 
 from .method_generator.exceptions import ClassValidationException
@@ -49,31 +50,76 @@ class CreateCppClassCommand(sublime_plugin.WindowCommand):
 		source_file_template = Template("C++ Source File")
 		header_file_template = Template("C++ Header File")
 		header_template = Template("C++ Header Style")
+		header_info_template = Template("C++ Header Info")
+
+		use_namespace = self.settings.get('use_namespace')
+		postfix = ""
+		if use_namespace:
+			use_namespace = "-ns"
 
 		try:
-			source_file_template.load(self.template_dir / 'sourcefile.template')
-			header_file_template.load(self.template_dir / 'headerfile.template')
+			if use_namespace:
+				source_file_template.load(self.template_dir / "sourcefile-ns.template")
+			else:
+				source_file_template.load(self.template_dir / "sourcefile.template")
+
+			if use_namespace:
+				header_file_template.load(self.template_dir / "headerfile-ns.template")
+			else:
+				header_file_template.load(self.template_dir / "headerfile.template")
 
 			if self.settings.get('use_pragma_once'):
 				header_template.load(self.template_dir / 'header-new.template')
 			else:
 				header_template.load(self.template_dir / 'header-old.template')
 
+			if self.settings.get('place_info_in_header'):
+				header_info_template.load(self.template_dir / 'header-info.template')
+			else:
+				header_info_template.set_empty()
+
 		except OSError as e:
 			sublime.error_message("Error while loading class template: {}".format(str(e)))
 			return
 
+		author_name = self.settings.get('info_author_name')
+		project_name = self.settings.get('project_name')
+		d = date.today()
+		date_value = d.strftime("%d/%m/%Y")
+		year_value = d.strftime("%Y")
+		header_info_template.render(class_name=class_name,
+			header_file_extension=self.header_file_extension,
+			author_name=author_name,
+			project_name=project_name,
+			date=date_value,
+			year=year_value)
+
+		file_name = class_name
+		namespace_name = self.settings.get('namespace_name')
+		if use_namespace:
+			for flag in self.settings.get('namespace_clear_flags'):
+				class_name = class_name.replace(flag, "")
 
 		# render the template
-		source_file_template.render(class_name=class_name, header_file_extension=self.header_file_extension)
-		header_file_template.render(class_name=class_name)
+		if self.settings.get('place_info_in_header'):
+			source_file_template.put_front("{class_name_info}\n\n")
+		source_file_template.render(class_name=class_name,
+			file_name=file_name,
+			header_file_extension=self.header_file_extension,
+			namespace_name=namespace_name,
+			class_name_info=header_info_template.template)
+		header_file_template.render(class_name=class_name, namespace_name=namespace_name)
 
 		# render headerfile into header style
+		template_vars = {'class_header_content': header_file_template.template, 'class_name_info':header_info_template.template}
 		if self.settings.get('use_pragma_once'):
-			template_vars = {'class_header_content': header_file_template.template}
+			pass
 		else:
-			template_vars = {'class_header_content': header_file_template.template, 'class_name_uppercase': self._build_header_symbol_name(class_name)}
+			template_vars['class_name_uppercase'] = self._build_header_symbol_name(class_name)
+			template_vars['class_scope'] = self.settings.get('header_scope')
 
+		if self.settings.get('place_info_in_header'):
+			header_template.put_front("{class_name_info}\n\n")
 		header_template.render(**template_vars)
 
 		# file names to create
@@ -84,13 +130,13 @@ class CreateCppClassCommand(sublime_plugin.WindowCommand):
 		try:
 
 			# write header file
-			header_file_obj = open(self.header_file, "w+")
+			header_file_obj = open(self.header_file, "w+", encoding='utf8')
 			header_file_obj.write(header_template.template)
 			header_file_obj.close()
 			self.view.set_status('class_create_progress_header_file', 'Successfully created {}'.format(self.header_file_name))
 
 			# write source file
-			source_file_obj = open(self.source_file, "w+")
+			source_file_obj = open(self.source_file, "w+", encoding='utf8')
 			source_file_obj.write(source_file_template.template)
 			source_file_obj.close()
 			self.view.set_status('class_create_progress_source_file', 'Successfully created {}'.format(self.source_file_name))

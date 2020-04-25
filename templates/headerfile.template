@@ -1,6 +1,6 @@
-class {class_name} {{
+class {class_name}
+{{
 public:
-
 	{class_name}();
 	~{class_name}();
 	

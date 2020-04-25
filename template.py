@@ -7,6 +7,11 @@ class Template:
 		self._name = name
 		self._filename = None
 
+	def set_empty(self):
+		self._template = ""
+
+	def put_front(self, front):
+		self._template = front + self._template
 
 	def load(self, filename):
 		# load template file

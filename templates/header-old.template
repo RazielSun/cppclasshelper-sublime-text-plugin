@@ -1,6 +1,6 @@
-#ifndef {class_name_uppercase}
-#define {class_name_uppercase}
+#ifndef {class_scope}{class_name_uppercase}
+#define {class_scope}{class_name_uppercase}
 
 {class_header_content}
 
-#endif
+#endif /* {class_scope}{class_name_uppercase} */
